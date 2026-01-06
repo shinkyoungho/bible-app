@@ -1,45 +1,60 @@
 import streamlit as st
-import requests
+import pandas as pd
 from datetime import datetime
 
-# 1. 페이지 기본 설정
+# 1. 페이지 기본 설정 및 디자인
 st.set_page_config(page_title="Gemini 매일 묵상 주해", layout="centered")
 
-# 2. 디자인 꾸미기 (모바일에서 앱처럼 보이게 함)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap');
-    .main { background-color: #f9f9f9; font-family: 'Nanum Myeongjo', serif; }
-    .bible-box { background-color: #ffffff; padding: 25px; border-radius: 15px; border: 1px solid #e0e0e0; margin-bottom: 20px; }
-    .interpretation { line-height: 2.0; font-size: 1.15em; color: #2c3e50; white-space: pre-wrap; }
-    .verse-header { color: #8e44ad; font-weight: bold; font-size: 1.2em; margin-bottom: 10px; border-left: 4px solid #8e44ad; padding-left: 10px; }
+    .main { background-color: #fcfcfc; font-family: 'Nanum Myeongjo', serif; }
+    .bible-box { background-color: #ffffff; padding: 25px; border-radius: 15px; border-left: 5px solid #6c5ce7; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+    .interpretation { line-height: 2.1; font-size: 1.15em; color: #2d3436; white-space: pre-wrap; }
+    .context-box { background-color: #f1f2f6; padding: 20px; border-radius: 10px; font-style: italic; color: #2f3542; margin-bottom: 20px; }
+    .verse-title { color: #6c5ce7; font-weight: bold; font-size: 1.3em; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 데이터 불러오기 (이 부분은 제가 나중에 데이터 소스를 연결해 드릴게요)
+# 2. 구글 시트 데이터 불러오기 함수
 def load_data():
-    # 현재는 샘플 데이터를 보여주지만, 나중에 제가 매일 업데이트하는 서버 주소로 바꿀 겁니다.
-    return {
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "title": "여호와는 나의 목자 (시편 23편)",
-        "context": "고대 근동의 목축 문화와 다윗의 배경을 통한 서론...",
-        "content": "여기에 Gemini가 작성한 15~20장 분량의 풍성한 각 절 주해가 들어갑니다."
-    }
+    # 사용자님이 주신 시트 ID
+    sheet_id = "1nNSdd8vQXdaZ2OubF_WinhFqpBQjY9KlBOdZGPeWAzE"
+    sheet_name = "Sheet1"  # 시트 하단 이름이 'Sheet1'이 아닐 경우 수정 필요
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
+    
+    try:
+        df = pd.read_csv(url)
+        # 가장 최근(마지막 행) 데이터를 가져옴
+        latest_data = df.iloc[-1]
+        return latest_data
+    except Exception as e:
+        return None
 
+# 3. 데이터 로드 및 화면 출력
 data = load_data()
 
-# 4. 앱 화면 출력
-st.title("🕊️ 오늘의 심층 주해")
-st.write(f"**날짜:** {data['date']}")
+st.title("📖 오늘의 심층 주해 묵상")
+today = datetime.now().strftime("%Y년 %m월 %d일")
+st.write(f"**묵상 일시:** {today}")
 st.markdown("---")
 
-st.header(f"주제: {data['title']}")
-st.subheader("🏛️ 고대 근동 배경 (Context)")
-st.info(data['context'])
+if data is not None:
+    # 시트 열 이름을 '제목', '배경', '주해', '적용'으로 가정합니다.
+    st.header(f"주제: {data['제목']}")
+    
+    st.markdown("### 🏛️ 고대 근동 배경 및 맥락 (Context)")
+    st.markdown(f"<div class='context-box'>{data['배경']}</div>", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 🕊️ 각 절 심층 주해")
+    st.markdown(f"<div class='interpretation'>{data['주해']}</div>", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### 📢 오늘의 적용 및 질문")
+    st.success(data['적용'])
+else:
+    st.warning("오늘의 묵상 데이터를 불러오는 중입니다. 잠시만 기다려 주시거나 구글 시트에 데이터가 있는지 확인해 주세요!")
 
 st.markdown("---")
-st.markdown("### 📖 오늘의 상세 주해")
-st.markdown(f"<div class='interpretation'>{data['content']}</div>", unsafe_allow_html=True)
-
-st.markdown("---")
-st.caption("매일 아침 Gemini가 당신을 위한 설교적 주해를 준비합니다.")
+st.caption("Gemini가 제공하는 10점 만점의 10점 주해 시스템입니다.")
